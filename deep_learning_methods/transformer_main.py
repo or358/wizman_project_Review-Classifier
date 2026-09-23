@@ -8,7 +8,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader, Dataset
 from datasets import load_dataset
-from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from torch.optim import AdamW
 
 class TransformerDataset(Dataset):
@@ -131,16 +131,17 @@ def save_graphs(experiment_name, epoch_data):
     plt.savefig(f"results/{experiment_name}_graph.png")
     plt.close()
 
-def train_transformer(dataset_name: str, batch_size=16, num_epochs=3):
+def train_transformer(dataset_name: str, model_name: str = 'distilbert-base-uncased', batch_size=16, num_epochs=3):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    experiment_name = f"{dataset_name}_Transformer_DistilBERT"
+    safe_model_name = model_name.replace("/", "-")
+    experiment_name = f"{dataset_name}_Transformer_{safe_model_name}"
     
     print(f"\n{'='*50}")
-    print(f" TRAINING TRANSFORMER ON {dataset_name.upper()}")
+    print(f" TRAINING {model_name.upper()} ON {dataset_name.upper()}")
     print(f"{'='*50}")
 
-    tokenizer = DistilBertTokenizer.from_pretrained('distilbert-base-uncased')
-    model = DistilBertForSequenceClassification.from_pretrained('distilbert-base-uncased', num_labels=2)
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2)
     model = model.to(device)
 
     print(f"Loading {dataset_name} dataset...")
@@ -209,14 +210,21 @@ def train_transformer(dataset_name: str, batch_size=16, num_epochs=3):
     save_results(experiment_name, epoch_results_data, best_eval_acc, best_eval_epoch, best_test_acc, best_test_epoch, best_induced_test_acc)
     save_graphs(experiment_name, epoch_results_data)
 
-def run_all_transformers():
+def run_all_transformers(model_name: str = 'distilbert-base-uncased', num_epochs: int = 3, batch_size: int = 16):
     """Runs the transformer experiment on both datasets automatically."""
     datasets = ['rotten_tomatoes', 'imdb']
     for ds in datasets:
         # 3 epochs is standard for fine-tuning transformers
-        train_transformer(dataset_name=ds, num_epochs=3)
+        train_transformer(dataset_name=ds, model_name=model_name, batch_size=batch_size, num_epochs=num_epochs)
     
     print("\nTransformer experiments completed. Results and graphs saved in 'results' folder.")
 
 if __name__ == "__main__":
-    run_all_transformers()
+    import argparse
+    parser = argparse.ArgumentParser(description="Run Transformer experiments")
+    parser.add_argument("--model_name", type=str, default="distilbert-base-uncased", help="HuggingFace model name to use")
+    parser.add_argument("--epochs", type=int, default=3, help="Number of training epochs")
+    parser.add_argument("--batch_size", type=int, default=16, help="Batch size for training")
+    args = parser.parse_args()
+    
+    run_all_transformers(model_name=args.model_name, num_epochs=args.epochs, batch_size=args.batch_size)

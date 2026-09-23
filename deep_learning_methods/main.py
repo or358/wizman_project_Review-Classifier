@@ -94,7 +94,7 @@ def prepare_data_for_dataset(dataset_name: str, preprocessor: TextPreprocessor):
     
     return vocab, train_loader, val_loader, test_loader
 
-def run_all_experiments():
+def run_all_experiments(transformer_model_name: str = 'distilbert-base-uncased'):
     """Runs all 24 classical combinations + 2 Transformer experiments automatically."""
     datasets = ['rotten_tomatoes', 'imdb']
     models = ['CNN', 'LSTM']
@@ -156,17 +156,22 @@ def run_all_experiments():
             
     # --- PART 2: TRANSFORMER EXPERIMENTS ---
     print("\n" + "="*50)
-    print(" STARTING TRANSFORMER EXPERIMENTS")
+    print(f" STARTING TRANSFORMER EXPERIMENTS WITH {transformer_model_name.upper()}")
     print("="*50)
     
     for dataset_name in datasets:
         # 3 epochs is standard for fine-tuning Transformers
-        train_transformer(dataset_name=dataset_name, batch_size=16, num_epochs=3)
+        train_transformer(dataset_name=dataset_name, model_name=transformer_model_name, batch_size=16, num_epochs=3)
 
     print("\nAll 26 automated experiments (Classical + Transformers) finished successfully!")
     print("Check the 'results' folder for your CSV files and graphs.")
 
 if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="Run all deep learning experiments")
+    parser.add_argument("--transformer_model", type=str, default="distilbert-base-uncased", help="HuggingFace model name for the transformer experiments")
+    args = parser.parse_args()
+
     # Ensure torchtext is installed for GloVe
     try:
         import torchtext
@@ -175,4 +180,4 @@ if __name__ == "__main__":
         print("Please install it using: pip install torchtext")
         exit(1)
         
-    run_all_experiments()
+    run_all_experiments(transformer_model_name=args.transformer_model)
